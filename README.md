@@ -1,3 +1,4 @@
 # The AI Agents Class
-<img width="1024" height="1024" alt="Gemini_Generated_Image_lhpxlrlhpxlrlhpx" src="https://github.com/user-attachments/assets/2c03f35b-f8c6-420c-82b6-01dafc9e3079" />
+<img width="1184" height="864" alt="Gemini_Generated_Image_l33ud6l33ud6l33u" src="https://github.com/user-attachments/assets/417c3619-5a52-445a-9007-4d9fc155e3d6" />
+
 This is the website for the *AI agents* class (CS 839, Spring 2026) at UW-Madison.
