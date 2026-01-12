@@ -146,7 +146,6 @@ Thu:
 
 Tue:
 - [Competition-Level Code Generation with AlphaCode](https://arxiv.org/abs/2203.07814)
-
 - [Solving olympiad geometry without human demonstrations (AlphaGeometry)](https://www.nature.com/articles/s41586-023-06747-5)
   - *supplementary:* [Olympiad-level formal mathematical reasoning with reinforcement learning (AlphaProof)](https://www.nature.com/articles/s41586-025-09833-y)
   - *supplementary:* [Mastering Chess and Shogi by Self-Play with a General Reinforcement Learning Algorithm (AlphaZero)](https://arxiv.org/abs/1712.01815)
