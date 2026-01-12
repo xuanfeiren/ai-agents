@@ -11,7 +11,7 @@ See [course info](course-info.md) for class structure, presentation advice, and 
 
 ### week 0 (Jan 20)
 
-*In the first week, we begin by providing a class overview and a deep dive into how to build LLM-based AI agents using a variety of techniques and frameworks*
+*We begin by providing a class overview and a deep dive into how to build LLM-based AI agents using a variety of techniques and frameworks*
 
 Tue: Class overview
 
