@@ -183,14 +183,7 @@ The agent refactored the food system from single variables to a `foods` list of 
 
 ---
 
-**Turn 4 — Feature: eating food spawns two more**
-> *"every time the snake eat one food, there should be two more random food"*
-
-The agent updated the food-eating logic so that whenever the snake consumes a food item, `spawn_food()` is called twice, placing two additional random food items on screen — making the game progressively more chaotic.
-
----
-
-**Turn 5 — Update the game README**
+**Turn 4 — Update the game README**
 > *"update the readme in snake folder"* → *"the up to date mechanism"*
 
 The agent updated `example/snake/README.md` to document all new features including multiple food items and the dynamic spawning behaviour.
@@ -202,7 +195,6 @@ The agent updated `example/snake/README.md` to document all new features includi
 - ⭐ Blue bonus food: +3 points, snake grows
 - 💜 Purple bad food: −1 point, snake shrinks
 - Up to 3 food items on screen simultaneously
-- Eating any food spawns 2 more random food items
 - Tutorial screen on launch
 - R to restart · Q to quit after game over
 

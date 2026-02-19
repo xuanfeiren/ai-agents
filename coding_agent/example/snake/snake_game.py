@@ -8,7 +8,7 @@ A classic Snake game implemented in Python using the Pygame library.
  - Game over conditions when the snake hits the screen boundaries or itself.
  - Options to restart or quit the game after a game over.
  - Multiple food items on the screen simultaneously.
- - Eating food spawns two additional food items.
+ - Eating one food item spawns exactly one replacement food item.
 '''
 
 import pygame
@@ -24,7 +24,7 @@ SCREEN_HEIGHT = 400
 BLOCK_SIZE = 20
 SNAKE_SPEED = 10
 INITIAL_SNAKE_LENGTH = 3 # Minimum length for the snake
-MAX_FOOD_ITEMS = 3 # Maximum number of food items on screen at once. This will be a target, may exceed temporarily.
+MAX_FOOD_ITEMS = 3 # Target maximum number of food items on screen at once.
 
 # Colors
 WHITE = (255, 255, 255)
@@ -192,15 +192,18 @@ def main():
         food_weights = list(food_probabilities.values())
 
         def spawn_food():
-            """Spawns food items until MAX_FOOD_ITEMS is reached, and adds two extra if food is eaten."""
+            """Attempts to spawn a single food item if there is space available.
+            Does not enforce MAX_FOOD_ITEMS directly, but checks for collisions.
+            """
             nonlocal foods # Allow modification of the foods list
             occupied_positions = snake_body[:] # Positions occupied by the snake
             # Add existing food positions to occupied_positions to prevent spawning on top of food
             for food_item in foods:
                 occupied_positions.append((food_item['x'], food_item['y']))
 
-            # Add food until MAX_FOOD_ITEMS is reached, or until we can't find a spot
-            while len(foods) < MAX_FOOD_ITEMS:
+            # Try to find a valid position for a new food item
+            # We'll attempt a few times to find a spot, to avoid infinite loops if the board is crowded.
+            for _ in range(10): # Try up to 10 times to find a spot
                 new_food_x = random.randrange(0, SCREEN_WIDTH // BLOCK_SIZE) * BLOCK_SIZE
                 new_food_y = random.randrange(0, SCREEN_HEIGHT // BLOCK_SIZE) * BLOCK_SIZE
                 
@@ -225,12 +228,13 @@ def main():
                         'type': food_type,
                         'score': score_value
                     })
-                    occupied_positions.append((new_food_x, new_food_y)) # Add newly spawned food to occupied positions
-                else:
-                    # If we can't find a spot, break to avoid infinite loop
-                    break
+                    return # Successfully spawned one food, exit the function
+            # If we looped 10 times and couldn't find a spot, we just don't spawn.
 
-        spawn_food() # Initial food spawn to fill up to MAX_FOOD_ITEMS
+        # Initial food spawn to fill up to MAX_FOOD_ITEMS
+        # This uses the simplified spawn_food which only adds if space is available.
+        while len(foods) < MAX_FOOD_ITEMS:
+            spawn_food()
 
         score = 0
         game_over = False
@@ -294,17 +298,17 @@ def main():
                 
                 if eaten_food_index != -1:
                     foods.pop(eaten_food_index) # Remove the eaten food
-                    # Add TWO new random food items
-                    for _ in range(2):
-                        spawn_food() # Call spawn_food twice to add two new items
+                    # *** REMOVED: The loop for spawning two extra foods ***
+                    # Relying on the final while loop to spawn one replacement food if needed.
                     # No need to pop snake tail if food is eaten
                 else:
                     # If no food was eaten, remove the tail segment
                     snake_body.pop()
 
-                # After handling eating/spawning, ensure we try to maintain MAX_FOOD_ITEMS if possible
-                # This call ensures we add more if current count < MAX_FOOD_ITEMS, and also accounts for the two extras.
-                spawn_food()
+                # Ensure we try to maintain MAX_FOOD_ITEMS (which is 3) if the total count dropped below it.
+                # This call handles adding a replacement food item after one was eaten, or filling up initially.
+                while len(foods) < MAX_FOOD_ITEMS:
+                    spawn_food()
 
                 # Drawing
                 screen.fill(WHITE)
