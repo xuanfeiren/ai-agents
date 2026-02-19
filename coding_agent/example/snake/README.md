@@ -14,6 +14,8 @@ Embark on a journey of growing your serpentine companion, navigating treacherous
     *   🍎 **Red (Regular) Food:** The staple diet. Grants **+1 point** and makes your snake grow.
     *   ⭐ **Blue (Bonus) Food:** A rare treat! Awards **+3 points** and extends your snake's length.
     *   💜 **Purple (Bad) Food:** A deceptive danger! Deducts **-1 point** and shrinks your snake (but not below a minimum length).
+*   **Multiple Food Items:** Several food items can appear on the screen simultaneously, offering more strategic choices.
+*   **Dynamic Food Spawning:** When you eat a food item, **two additional random food items** will spawn on the screen, keeping the game dynamic and challenging!
 *   **Challenging Gameplay:** Test your reflexes as the game ends if the snake collides with screen boundaries or its own body.
 *   **Interactive Game Over:** When the adventure concludes, choose to **Restart (R)** for another go or **Quit (Q)** to exit.
 

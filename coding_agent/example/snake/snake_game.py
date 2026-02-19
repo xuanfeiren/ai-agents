@@ -7,6 +7,8 @@ A classic Snake game implemented in Python using the Pygame library.
  - Different food types (regular, bonus, bad) with unique effects.
  - Game over conditions when the snake hits the screen boundaries or itself.
  - Options to restart or quit the game after a game over.
+ - Multiple food items on the screen simultaneously.
+ - Eating food spawns two additional food items.
 '''
 
 import pygame
@@ -22,6 +24,7 @@ SCREEN_HEIGHT = 400
 BLOCK_SIZE = 20
 SNAKE_SPEED = 10
 INITIAL_SNAKE_LENGTH = 3 # Minimum length for the snake
+MAX_FOOD_ITEMS = 3 # Maximum number of food items on screen at once. This will be a target, may exceed temporarily.
 
 # Colors
 WHITE = (255, 255, 255)
@@ -139,7 +142,8 @@ def show_score(score):
     screen.blit(score_surface, (10, 10))
 
 def game_over_screen(score):
-    """Displays the game over screen with final score and options to restart or quit."""
+    """Displays the game over screen with final score and options to restart or quit.
+    Returns True to restart, False to quit."""
     screen.fill(WHITE)
     font_large = pygame.font.Font(None, 70)
     font_small = pygame.font.Font(None, 35)
@@ -161,147 +165,173 @@ def game_over_screen(score):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                return False  # Quit
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_q:
-                    pygame.quit()
-                    sys.exit()
-                if event.key == pygame.K_r:
-                    return # Restart the game
+                    return False  # Quit
+                elif event.key == pygame.K_r:
+                    return True   # Restart
 
 # --- Main Game Logic ---
 def main():
     """Main function to run the Snake game."""
-    # Initialize game state variables
-    snake_x = SCREEN_WIDTH // 2
-    snake_y = SCREEN_HEIGHT // 2
-    snake_body = [(snake_x, snake_y - i * BLOCK_SIZE) for i in range(INITIAL_SNAKE_LENGTH)] # Initialize snake body
-    direction = "RIGHT"
-    change_to = direction
+    
+    # --- Outer loop for restarting the game ---
+    while True: 
+        # Initialize game state variables for a new game
+        snake_x = SCREEN_WIDTH // 2
+        snake_y = SCREEN_HEIGHT // 2
+        snake_body = [(snake_x, snake_y - i * BLOCK_SIZE) for i in range(INITIAL_SNAKE_LENGTH)] # Initialize snake body
+        direction = "RIGHT"
+        change_to = direction
 
-    # Food properties
-    food_x, food_y = 0, 0
-    food_color = RED
-    food_probabilities = {'regular': 0.6, 'bonus': 0.2, 'bad': 0.2} # Adjust probabilities as needed
-    food_types = list(food_probabilities.keys())
-    food_weights = list(food_probabilities.values())
+        # Food properties
+        foods = [] # List to store multiple food items
+        food_probabilities = {'regular': 0.6, 'bonus': 0.2, 'bad': 0.2} # Adjust probabilities as needed
+        food_types = list(food_probabilities.keys())
+        food_weights = list(food_probabilities.values())
 
-    def spawn_food():
-        """Spawns food at a random location with a random type."""
-        nonlocal food_x, food_y, food_color, food_type # Declare nonlocals to modify them
+        def spawn_food():
+            """Spawns food items until MAX_FOOD_ITEMS is reached, and adds two extra if food is eaten."""
+            nonlocal foods # Allow modification of the foods list
+            occupied_positions = snake_body[:] # Positions occupied by the snake
+            # Add existing food positions to occupied_positions to prevent spawning on top of food
+            for food_item in foods:
+                occupied_positions.append((food_item['x'], food_item['y']))
+
+            # Add food until MAX_FOOD_ITEMS is reached, or until we can't find a spot
+            while len(foods) < MAX_FOOD_ITEMS:
+                new_food_x = random.randrange(0, SCREEN_WIDTH // BLOCK_SIZE) * BLOCK_SIZE
+                new_food_y = random.randrange(0, SCREEN_HEIGHT // BLOCK_SIZE) * BLOCK_SIZE
+                
+                # Ensure food does not spawn on the snake or on existing food
+                if (new_food_x, new_food_y) not in occupied_positions:
+                    # Determine food type and color
+                    food_type = random.choices(food_types, weights=food_weights, k=1)[0]
+                    if food_type == 'regular':
+                        food_color = RED
+                        score_value = 1
+                    elif food_type == 'bonus':
+                        food_color = BLUE
+                        score_value = 3
+                    else: # bad food
+                        food_color = PURPLE
+                        score_value = -1
+                    
+                    foods.append({
+                        'x': new_food_x,
+                        'y': new_food_y,
+                        'color': food_color,
+                        'type': food_type,
+                        'score': score_value
+                    })
+                    occupied_positions.append((new_food_x, new_food_y)) # Add newly spawned food to occupied positions
+                else:
+                    # If we can't find a spot, break to avoid infinite loop
+                    break
+
+        spawn_food() # Initial food spawn to fill up to MAX_FOOD_ITEMS
+
+        score = 0
+        game_over = False
+
+        # --- Inner game loop ---
+        while not game_over:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game_over = True
+                    should_restart = False
+                    break
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_UP and direction != "DOWN":
+                        change_to = "UP"
+                    if event.key == pygame.K_DOWN and direction != "UP":
+                        change_to = "DOWN"
+                    if event.key == pygame.K_LEFT and direction != "RIGHT":
+                        change_to = "LEFT"
+                    if event.key == pygame.K_RIGHT and direction != "LEFT":
+                        change_to = "RIGHT"
+            else:
+                direction = change_to
+
+                if direction == "UP":
+                    snake_y -= BLOCK_SIZE
+                if direction == "DOWN":
+                    snake_y += BLOCK_SIZE
+                if direction == "LEFT":
+                    snake_x -= BLOCK_SIZE
+                if direction == "RIGHT":
+                    snake_x += BLOCK_SIZE
+
+                snake_body.insert(0, (snake_x, snake_y))
+
+                # Wall collision
+                if snake_x < 0 or snake_x >= SCREEN_WIDTH or snake_y < 0 or snake_y >= SCREEN_HEIGHT:
+                    game_over = True
+                    should_restart = False
+                    break
+                
+                # Self collision
+                for segment in snake_body[1:]:
+                    if snake_body[0] == segment:
+                        game_over = True
+                        should_restart = False
+                        break
+                if game_over: break
+
+                # Food eating - check collision with any food item
+                eaten_food_index = -1
+                for i, food_item in enumerate(foods):
+                    if snake_x == food_item['x'] and snake_y == food_item['y']:
+                        score += food_item['score']
+                        # Apply effects based on food type (e.g., shrinking snake)
+                        if food_item['type'] == 'bad':
+                            if len(snake_body) > INITIAL_SNAKE_LENGTH:
+                                snake_body.pop() # Remove the tail segment
+                        
+                        eaten_food_index = i
+                        break # Exit loop once food is eaten
+                
+                if eaten_food_index != -1:
+                    foods.pop(eaten_food_index) # Remove the eaten food
+                    # Add TWO new random food items
+                    for _ in range(2):
+                        spawn_food() # Call spawn_food twice to add two new items
+                    # No need to pop snake tail if food is eaten
+                else:
+                    # If no food was eaten, remove the tail segment
+                    snake_body.pop()
+
+                # After handling eating/spawning, ensure we try to maintain MAX_FOOD_ITEMS if possible
+                # This call ensures we add more if current count < MAX_FOOD_ITEMS, and also accounts for the two extras.
+                spawn_food()
+
+                # Drawing
+                screen.fill(WHITE)
+                draw_grid()
+
+                # Draw snake
+                for segment in snake_body:
+                    pygame.draw.rect(screen, GREEN, (segment[0], segment[1], BLOCK_SIZE, BLOCK_SIZE))
+
+                # Draw all food items
+                for food_item in foods:
+                    pygame.draw.rect(screen, food_item['color'], (food_item['x'], food_item['y'], BLOCK_SIZE, BLOCK_SIZE))
+
+                show_score(score)
+                pygame.display.flip()
+                clock.tick(SNAKE_SPEED)
         
-        # Ensure food spawns within the grid boundaries and not on the snake
-        occupied_positions = snake_body[:]
-        while True:
-            food_x = random.randrange(0, SCREEN_WIDTH // BLOCK_SIZE) * BLOCK_SIZE
-            food_y = random.randrange(0, SCREEN_HEIGHT // BLOCK_SIZE) * BLOCK_SIZE
-            if (food_x, food_y) not in occupied_positions:
-                break
+        if not game_over: # If we broke out of the inner loop due to QUIT event
+            break
+            
+        should_restart = game_over_screen(score)
         
-        # Determine food type and color
-        food_type = random.choices(food_types, weights=food_weights, k=1)[0]
-        if food_type == 'regular':
-            food_color = RED
-        elif food_type == 'bonus':
-            food_color = BLUE
-        else: # bad food
-            food_color = PURPLE
-        return food_x, food_y, food_color, food_type
-
-    food_x, food_y, food_color, food_type = spawn_food() # Initial food spawn
-
-    score = 0
-    game_over = False
-
-    while not game_over:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP and direction != "DOWN":
-                    change_to = "UP"
-                if event.key == pygame.K_DOWN and direction != "UP":
-                    change_to = "DOWN"
-                if event.key == pygame.K_LEFT and direction != "RIGHT":
-                    change_to = "LEFT"
-                if event.key == pygame.K_RIGHT and direction != "LEFT":
-                    change_to = "RIGHT"
-
-        # Update direction
-        direction = change_to
-
-        # Move snake
-        if direction == "UP":
-            snake_y -= BLOCK_SIZE
-        if direction == "DOWN":
-            snake_y += BLOCK_SIZE
-        if direction == "LEFT":
-            snake_x -= BLOCK_SIZE
-        if direction == "RIGHT":
-            snake_x += BLOCK_SIZE
-
-        # Add new head to snake body
-        # Insert the new head position at the beginning of the snake's body list
-        snake_body.insert(0, (snake_x, snake_y))
-
-        # Check for wall collision
-        if snake_x < 0 or snake_x >= SCREEN_WIDTH or snake_y < 0 or snake_y >= SCREEN_HEIGHT:
-            game_over = True
-
-        # Check for self collision
-        # Check if the new head position is already in the rest of the snake's body
-        for segment in snake_body[1:]:
-            if snake_body[0] == segment:
-                game_over = True
-                break
-
-        if game_over:
+        if not should_restart:
             break
 
-        # Handle food eating
-        if snake_x == food_x and snake_y == food_y:
-            # Food is eaten, apply effects based on type
-            if food_type == 'regular':
-                score += 1
-            elif food_type == 'bonus':
-                score += 3 # More points for bonus food
-                # Optional: Implement a temporary effect here later if desired
-            elif food_type == 'bad':
-                score -= 1 # Lose points for bad food
-                # Shrink snake if its length is greater than the minimum
-                if len(snake_body) > INITIAL_SNAKE_LENGTH:
-                    snake_body.pop() # Remove the tail segment
-
-            # Spawn new food after eating
-            food_x, food_y, food_color, food_type = spawn_food()
-        else:
-            # If no food was eaten, remove the tail segment to keep snake length consistent
-            snake_body.pop()
-
-        # --- Drawing ---
-        screen.fill(WHITE)
-        draw_grid()
-
-        # Draw snake
-        for segment in snake_body:
-            pygame.draw.rect(screen, GREEN, (segment[0], segment[1], BLOCK_SIZE, BLOCK_SIZE))
-
-        # Draw food
-        pygame.draw.rect(screen, food_color, (food_x, food_y, BLOCK_SIZE, BLOCK_SIZE))
-
-        show_score(score)
-
-        # Update the display
-        pygame.display.flip()
-
-        # Control frame rate
-        clock.tick(SNAKE_SPEED)
-
-    # Game over sequence
-    game_over_screen(score)
-    # After game over, the program will exit. User needs to re-run script to play again.
+    pygame.quit()
+    sys.exit()
 
 # Entry point of the script
 if __name__ == "__main__":
