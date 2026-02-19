@@ -158,24 +158,58 @@ coding_agent/
 
 ## Example: Snake Game (built by this agent)
 
-Everything inside `example/snake/` was written by this coding agent in a single session using `gemini/gemini-2.5-flash-lite`. No code was written by hand.
+Everything inside `example/snake/` was produced entirely through a multi-turn conversation with this coding agent using `gemini/gemini-2.5-flash-lite`. No code was written by hand.
 
-**Prompt given to the agent:**
+### Turn-by-turn session
+
+**Turn 1 — Initial build**
 > *"Write a Snake game in Python using pygame. The snake should grow when it eats food, and the game should end when the snake hits a wall or itself. Show the score on screen."*
 
-The agent then autonomously:
-1. Planned the implementation
-2. Used `write_file` to create `snake_game.py`
-3. Used `execute_bash` to run `pip install pygame`
-4. Reorganised the files into `example/snake/` via `create_directory` + `write_file`
-5. Wrote a full `README.md` for the game — including multiple food types (regular, bonus, bad) that it added unprompted as improvements
+The agent planned the implementation, wrote `snake_game.py` (~160 lines), ran `pip install pygame` via `execute_bash`, reorganised files into `example/snake/` using `create_directory` + `write_file`, and added multiple food types (🍎 regular, ⭐ bonus, 💜 bad) unprompted as an improvement.
 
-**To run the snake game:**
+---
+
+**Turn 2 — Bug fix: restart not working**
+> *"press R but didn't restart"*
+
+The agent read the source code, diagnosed that `game_over_screen()` returned correctly but `main()` had no outer loop to restart from, then rewrote the control flow: `game_over_screen()` now returns `True`/`False`, and `main()` wraps everything in a `while True` outer loop that re-initialises game state on restart.
+
+---
+
+**Turn 3 — Feature: multiple simultaneous food items**
+> *"I want to add more features to this game, like there can be multiple and many food options at the same time"*
+
+The agent refactored the food system from single variables to a `foods` list of dicts, introduced a `MAX_FOOD_ITEMS = 3` constant, and updated spawning and collision logic to manage multiple food items at once.
+
+---
+
+**Turn 4 — Feature: eating food spawns two more**
+> *"every time the snake eat one food, there should be two more random food"*
+
+The agent updated the food-eating logic so that whenever the snake consumes a food item, `spawn_food()` is called twice, placing two additional random food items on screen — making the game progressively more chaotic.
+
+---
+
+**Turn 5 — Update the game README**
+> *"update the readme in snake folder"* → *"the up to date mechanism"*
+
+The agent updated `example/snake/README.md` to document all new features including multiple food items and the dynamic spawning behaviour.
+
+---
+
+### Final game features
+- 🍎 Red food: +1 point, snake grows
+- ⭐ Blue bonus food: +3 points, snake grows
+- 💜 Purple bad food: −1 point, snake shrinks
+- Up to 3 food items on screen simultaneously
+- Eating any food spawns 2 more random food items
+- Tutorial screen on launch
+- R to restart · Q to quit after game over
+
+**To run:**
 ```bash
 pip install pygame
 python example/snake/snake_game.py
 ```
-
-Controls: arrow keys to move · **R** to restart · **Q** to quit after game over.
 
 ---
